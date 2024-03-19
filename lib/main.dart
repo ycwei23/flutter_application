@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'module/claude_api.dart' as claude;
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 void main() async{
   await dotenv.load(fileName: "assets/var.env");
@@ -35,13 +34,7 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   final TextEditingController _inputController = TextEditingController();
-  List<Map<String, dynamic>> _messages = [];
-
-  @override
-  void initState() {
-    super.initState();
-    _messages = claude.getMessageHistory();
-  }
+  final List<Map<String, dynamic>> _messages = [];
 
   void clearMessages() {
     setState(() {
@@ -50,11 +43,12 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Future<void> _sendMessage(String text) async {
+    _inputController.clear();
     setState(() {
       _messages.add({'role': 'user', 'content': [{'type': 'text', 'text': text}]});
     });
 
-    String response = await claude.generateText(text);
+    String response = await claude.generateText(_messages);
 
     setState(() {
       _messages.add({'role': 'assistant', 'content': [{'type': 'text', 'text': response}]});
@@ -87,7 +81,6 @@ class _MyHomePageState extends State<MyHomePage> {
             TextButton(
               child: const Text('確定'),
               onPressed: () {
-                claude.clearHistory();
                 clearMessages();
                 Navigator.of(context).pop();
               },
