@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'module/claude_api.dart' as claude;
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 void main() async{
   await dotenv.load(fileName: "assets/var.env");
@@ -34,15 +35,33 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   final TextEditingController _inputController = TextEditingController();
-  String _responseText = '';
-  Future<void> generateText(String prompt) async {
-    String responseText = await claude.generateText(prompt);
+  List<Map<String, dynamic>> _messages = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _messages = claude.getMessageHistory();
+  }
+
+  void clearMessages() {
     setState(() {
-      _responseText = responseText;
+      _messages.clear();
     });
   }
 
+  Future<void> _sendMessage(String text) async {
+    setState(() {
+      _messages.add({'role': 'user', 'content': [{'type': 'text', 'text': text}]});
+    });
 
+    String response = await claude.generateText(text);
+
+    setState(() {
+      _messages.add({'role': 'assistant', 'content': [{'type': 'text', 'text': response}]});
+    });
+
+    _inputController.clear();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -50,7 +69,7 @@ class _MyHomePageState extends State<MyHomePage> {
       backgroundColor: const Color(0xff343541),
       appBar: AppBar(
         title: const Text(
-          'Flutter and Claude 3',
+          'MindPal',
           style: TextStyle(color: Colors.white),
         ),
         backgroundColor: const Color(0xff343541),
@@ -58,15 +77,30 @@ class _MyHomePageState extends State<MyHomePage> {
       body: Column(
         children: [
           Expanded(
-            child: SingleChildScrollView(
+            child: ListView.builder(
               reverse: true,
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Text(
-                  _responseText,
-                  style: const TextStyle(color: Colors.white),
-                ),
-              ),
+              itemCount: _messages.length,
+              itemBuilder: (context, index) {
+                final message = _messages[_messages.length - 1 - index];
+                final isUser = message['role'] == 'user';
+                return Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Align(
+                    alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
+                    child: Container(
+                      padding: const EdgeInsets.all(12.0),
+                      decoration: BoxDecoration(
+                        color: isUser ? Colors.blue : Colors.grey[800],
+                        borderRadius: BorderRadius.circular(12.0),
+                      ),
+                      child: Text(
+                        message['content'][0]['text'],
+                        style: TextStyle(color: isUser ? Colors.white : Colors.white),
+                      ),
+                    ),
+                  ),
+                );
+              },
             ),
           ),
           Padding(
@@ -90,12 +124,21 @@ class _MyHomePageState extends State<MyHomePage> {
                 ),
                 IconButton(
                   onPressed: () {
-                    generateText(_inputController.text);
-                    _inputController.clear();
+                    _sendMessage(_inputController.text);
                   },
                   icon: const Icon(
                     Icons.send,
                     color: Colors.blue,
+                  ),
+                ),
+                IconButton(
+                  onPressed: () {
+                    claude.clearHistory();
+                    clearMessages();
+                  },
+                  icon: const Icon(
+                    Icons.refresh,
+                    color: Colors.white,
                   ),
                 ),
               ],
