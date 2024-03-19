@@ -63,6 +63,42 @@ class _MyHomePageState extends State<MyHomePage> {
     _inputController.clear();
   }
 
+  Future<void> _showConfirmationDialog() async {
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false, // 用戶必須選擇確定或取消
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('清除對話記錄'),
+          content: const SingleChildScrollView(
+            child: ListBody(
+              children: <Widget>[
+                Text('你確定要清除對話記錄嗎?'),
+              ],
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('取消'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              child: const Text('確定'),
+              onPressed: () {
+                claude.clearHistory();
+                clearMessages();
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -133,8 +169,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 ),
                 IconButton(
                   onPressed: () {
-                    claude.clearHistory();
-                    clearMessages();
+                    _showConfirmationDialog();
                   },
                   icon: const Icon(
                     Icons.refresh,
